@@ -49,7 +49,7 @@ def load_source_embeddings(sources:list,emb_dim =2048):
         del vecs
     return embs,sense_to_ix,ix_to_sense
 
-def get_res(key_list,mat_list):
+def get_res(key_list,mat_list,emb_dim= 2048):
     vocab = set(key_list[0])
     for skset in key_list:
         vocab = vocab.union(skset)
@@ -57,12 +57,12 @@ def get_res(key_list,mat_list):
     sense_to_ix = {}
     for sense in vocab:
         sense_to_ix[sense] = len(sense_to_ix)
-    res = np.zeros((len(vocab), emb_dim))
+    meta_emb = np.zeros((len(vocab), emb_dim))
     for i in range(len(key_list)):
         vecs = {k: v for k, v in zip(key_list[i], mat_list[i])}
-        for sense in vocab:
-            res[sense_to_ix[sense], :] += vecs[sense]
-    return res
+        for sense in vecs:
+            meta_emb[sense_to_ix[sense], :] += vecs[sense]
+    return meta_emb,keys
 
 if __name__ == '__main__':
     #
@@ -150,8 +150,8 @@ if __name__ == '__main__':
     src1_vec = np.matmul(src1_vec, mat1)
     src2_vec = np.matmul(src2_vec, mat2)
 
-    res = get_res([i['labels'] for i in sources],[src1_vec,src2_vec])
-    np.savez(f'pip_{ares_name}_sensem{step}_e{epoch}.npz', vectors=res, labels=list(ares_dict_src.keys())
+    meta_emb,keys = get_res([i['labels'] for i in sources],[src1_vec,src2_vec])
+    np.savez(f'pip_{ares_name}_sensem{step}_e{epoch}.npz', vectors=meta_emb, labels=keys
              , mat1=mat1, mat2=mat2,loss = loss_list)
     end = time.time()
     print(f"it took {end - start}")
