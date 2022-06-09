@@ -62,7 +62,7 @@ def get_res(key_list,mat_list,emb_dim= 2048):
         vecs = {k: v for k, v in zip(key_list[i], mat_list[i])}
         for sense in vecs:
             meta_emb[sense_to_ix[sense], :] += vecs[sense]
-    return meta_emb,keys
+    return meta_emb,list(vocab)
 
 if __name__ == '__main__':
     #
