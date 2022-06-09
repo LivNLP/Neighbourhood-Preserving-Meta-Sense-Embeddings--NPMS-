@@ -1,3 +1,4 @@
+
 import time
 import numpy as np
 import torch.optim as optim
@@ -16,6 +17,52 @@ def get_args():
     args = parser.parse_args()
     return args
 
+def load_source_embeddings(sources:list,emb_dim =2048):
+    """
+    Load all source embeddings and compute the intersection of all vocabularies.
+    """
+    embeddings = []
+    vocab = set(sources[0]['labels'])
+
+    #get the intersection of the vocabs
+    for np_loader in sources:
+
+        vocab = vocab.intersection(np_loader['labels'])
+
+    # sort vocab intersection, create sense2idx, idx2sense
+    embs = []
+    vocab = list(vocab)
+    vocab = sorted(vocab)
+    sense_to_ix = {}
+    for sense in vocab:
+        sense_to_ix[sense] = len(sense_to_ix)
+    ix_to_sense = {value: key for (key, value) in sense_to_ix.items()}
+
+    # Get matrices for training with the same sense order
+    for np_loader in sources:
+        src = np.zeros((len(vocab), emb_dim))
+        vecs = {k:v for k,v in zip(np_loader['labels'],np_loader['vectors'])}
+        for sense in vocab:
+            src[sense_to_ix[sense], :] = vecs[sense]
+        embs.append(torch.tensor(src,device=device,dtype=torch.float32))
+
+        del vecs
+    return embs,sense_to_ix,ix_to_sense
+
+def get_res(key_list,mat_list):
+    vocab = set(key_list[0])
+    for skset in key_list:
+        vocab = vocab.union(skset)
+    print('final vocab size',len(vocab),vocab[1])
+    sense_to_ix = {}
+    for sense in vocab:
+        sense_to_ix[sense] = len(sense_to_ix)
+    res = np.zeros((len(vocab), emb_dim))
+    for i in range(len(key_list)):
+        vecs = {k: v for k, v in zip(key_list[i], mat_list[i])}
+        for sense in vocab:
+            res[sense_to_ix[sense], :] += vecs[sense]
+    return res
 
 if __name__ == '__main__':
     #
@@ -27,15 +74,15 @@ if __name__ == '__main__':
         print(torch.cuda.get_device_name(idx))
     device = torch.device('cuda')
 
-    smbert_mat = torch.eye(2048)
-    smbert_mat = smbert_mat.to(device)
-    smbert_mat.requires_grad = True
+    proj_mat1 = torch.eye(2048)
+    proj_mat1 = proj_mat1.to(device)
+    proj_mat1.requires_grad = True
 
-    ares_mat = torch.eye(2048)
-    ares_mat = ares_mat.to(device)
-    ares_mat.requires_grad = True
+    proj_mat2 = torch.eye(2048)
+    proj_mat2 = proj_mat2.to(device)
+    proj_mat2.requires_grad = True
 
-    optmizer = optim.Adam([ares_mat, smbert_mat], lr=0.001)
+    optmizer = optim.Adam([proj_mat1,proj_mat2], lr=0.001)
     res = torch.zeros(1)
     res.to(device)
     ares_name = ''
@@ -46,77 +93,65 @@ if __name__ == '__main__':
         ares = np.load('../emb_npz/ares_org.npz')
         ares_name = 'unares'
     smbert = np.load('../sensembert/sensembert_norm.npz')
+    sources = [smbert,ares]
+    embs,sense_to_ix,ix_to_sense = load_source_embeddings(sources)
+    emb1 = embs[0]
+    emb2 = embs[1]
 
-    smbert_dict_src = {k: v for k, v in zip(smbert['labels'],
-                                            torch.tensor(smbert['vectors'], device=device))}
-    ares_dict_src = {k: v for k, v in zip(ares['labels'],
-                                          torch.tensor(ares['vectors'], device=device))}
-
-    smbert_dict = dict(sorted(smbert_dict_src.items(), key=lambda pair: pair[0]))
-    del smbert_dict_src
-    ares_dict = {k: ares_dict_src[k] for k in smbert_dict.keys()}
 
     batch_sz = 10000
     step = args.step
     loss = 0
     naive_loss = 0
-    epoch = args.e
+    epoch = 3 # args.e
     loss_list = []
+    vocab_size = len(sense_to_ix.keys())
     for _ in range(epoch):
         epoch_loss = 0
-        for i in range(0, len(smbert_dict.keys()) // batch_sz):
-            smbert_vec = torch.stack(
-                list(smbert_dict.values())[i * batch_sz:(i + 1) * batch_sz])
-            ares_vec = torch.stack(
-                list(ares_dict.values())[i * batch_sz:(i + 1) * batch_sz])
-            # print(smbert_vec.shape)
-            tpoch = tqdm(enumerate(range(i, len(smbert_dict.keys()) // batch_sz, step)))
-            for idx, j in tpoch:
-                smbert_vec_T = torch.stack(
-                    list(smbert_dict.values())[j * batch_sz:(j + 1) * batch_sz])
-                ares_vec_T = torch.stack(
-                    list(ares_dict.values())[j * batch_sz:(j + 1) * batch_sz])
-                # print(ares_vec.shape)
-                smbert_pip = torch.matmul(smbert_vec, smbert_vec_T.T)
-                ares_pip = torch.matmul(ares_vec, ares_vec_T.T)
-                meta =  torch.matmul(smbert_vec, smbert_mat) + \
-                       torch.matmul(ares_vec, ares_mat)
-                meta_T = torch.matmul(smbert_vec_T, smbert_mat) + \
-                       torch.matmul(ares_vec_T, ares_mat)
-                meta_pip = torch.matmul(meta, meta_T.T)
-                naive = smbert_vec + ares_vec
-                naive_T = smbert_vec_T+ares_vec_T
-                naive_pip = torch.matmul(naive,naive_T.T)
-                # print(meta_pip.shape)
-                loss = loss + torch.norm(meta_pip - ares_pip) + torch.norm(meta_pip - smbert_pip)
-                naive_loss = naive_loss + torch.norm(naive_pip - ares_pip) + torch.norm(naive_pip - smbert_pip)
+        for i in range(0, vocab_size// batch_sz):
+            src1 = emb1[i * batch_sz:(i + 1) * batch_sz, :]
 
-                tpoch.set_postfix(loss="%.3f" % loss.item(),naive="%.3f" % naive_loss.item(),
-                                  ep=_,eploss = epoch_loss)
-            # print(ares_mat)
-            # print("step back")
+            src2 = emb2[i * batch_sz:(i + 1) * batch_sz, :]
+
+            meta =  torch.matmul(src1,proj_mat1) + \
+                       torch.matmul(src2, proj_mat2)
+            meta_pip = torch.matmul(meta, meta.T)
+            naive = src1+src2
+            naive_pip = torch.matmul(naive, naive.T)
+
+            naive_loss = naive_loss + torch.norm(naive_pip - torch.matmul(src1, src1.T)) \
+                   + torch.norm(naive_pip - torch.matmul(src2, src2.T))
+            loss = loss + torch.norm(meta_pip - torch.matmul(src1, src1.T)) \
+                   + torch.norm(meta_pip - torch.matmul(src2, src2.T))
+            print("loss %.3f" % loss.item(),"naive %.3f" % naive_loss.item(),
+                              _, epoch_loss)
+
             epoch_loss = epoch_loss+loss.item()
             loss.backward()
             optmizer.step()
             optmizer.zero_grad()
-
             loss = 0
             naive_loss=0
         print(epoch_loss)
         loss_list.append(epoch_loss)
 
-        # if _>=5:
-    start = time.time()
-    out = []
-    for key in ares_dict_src.keys():
-        if key in smbert_dict.keys():
-            temp = torch.matmul(ares_dict[key], ares_mat) + torch.matmul(smbert_dict[key], smbert_mat)
-            out.append(temp.cpu().detach().tolist())
-        else:
-            temp = torch.matmul(ares_dict_src[key], ares_mat)
-            out.append(temp.cpu().detach().tolist())
 
-    np.savez(f'pip_{ares_name}_sensem{step}_e{epoch}.npz', vectors=np.array(out), labels=list(ares_dict_src.keys())
-             , mat1=smbert_mat.cpu().detach().numpy(), mat2=ares_mat.cpu().detach().numpy(),loss = loss_list)
+    print(loss_list)
+
+
+
+
+    mat1 = proj_mat1.cpu().detach().numpy()
+    mat2 = proj_mat2.cpu().detach().numpy()
+
+    src1_vec = sources[0]['vectors']
+    src2_vec = sources[1]['vectors']
+
+    src1_vec = np.matmul(src1_vec, mat1)
+    src2_vec = np.matmul(src2_vec, mat2)
+
+    res = get_res([i['labels'] for i in sources],[src1_vec,src2_vec])
+    np.savez(f'pip_{ares_name}_sensem{step}_e{epoch}.npz', vectors=res, labels=list(ares_dict_src.keys())
+             , mat1=mat1, mat2=mat2,loss = loss_list)
     end = time.time()
     print(f"it took {end - start}")
