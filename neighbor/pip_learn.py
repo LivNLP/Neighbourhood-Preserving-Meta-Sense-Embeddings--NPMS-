@@ -53,7 +53,7 @@ def get_res(key_list,mat_list):
     vocab = set(key_list[0])
     for skset in key_list:
         vocab = vocab.union(skset)
-    print('final vocab size',len(vocab),vocab[1])
+    print('final vocab size',len(vocab))
     sense_to_ix = {}
     for sense in vocab:
         sense_to_ix[sense] = len(sense_to_ix)
