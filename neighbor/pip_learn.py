@@ -137,10 +137,8 @@ if __name__ == '__main__':
 
 
     print(loss_list)
-
-
-
-
+    
+    start = time.time()
     mat1 = proj_mat1.cpu().detach().numpy()
     mat2 = proj_mat2.cpu().detach().numpy()
 
