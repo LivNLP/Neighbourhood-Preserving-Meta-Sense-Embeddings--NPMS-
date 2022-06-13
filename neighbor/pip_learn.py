@@ -116,11 +116,7 @@ if __name__ == '__main__':
             meta =  torch.matmul(src1,proj_mat1) + \
                        torch.matmul(src2, proj_mat2)
             meta_pip = torch.matmul(meta, meta.T)
-            naive = src1+src2
-            naive_pip = torch.matmul(naive, naive.T)
-
-            naive_loss = naive_loss + torch.norm(naive_pip - torch.matmul(src1, src1.T)) \
-                   + torch.norm(naive_pip - torch.matmul(src2, src2.T))
+            
             loss = loss + torch.norm(meta_pip - torch.matmul(src1, src1.T)) \
                    + torch.norm(meta_pip - torch.matmul(src2, src2.T))
             print("loss %.3f" % loss.item(),"naive %.3f" % naive_loss.item(),
@@ -131,7 +127,7 @@ if __name__ == '__main__':
             optmizer.step()
             optmizer.zero_grad()
             loss = 0
-            naive_loss=0
+          
         print(epoch_loss)
         loss_list.append(epoch_loss)
 
