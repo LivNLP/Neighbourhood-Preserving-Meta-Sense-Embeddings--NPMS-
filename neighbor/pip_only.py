@@ -12,7 +12,6 @@ def get_args():
     parser.add_argument('-e', default=1, type=int)
     parser.add_argument('-norm', type=bool,default=True)
     parser.add_argument('-step', default=1)
-    
     # parser.add_argument('-noun',default=False)
     args = parser.parse_args()
     return args
@@ -117,15 +116,6 @@ if __name__ == '__main__':
     for _ in range(epoch):
         epoch_loss = 0
 
-        for key in dict3.keys():
-            if key not in sense_to_ix.keys():
-                continue
-            vec1 = emb1[sense_to_ix[key]]
-            vec2 = emb2[sense_to_ix[key]]
-            # print(vec1.shape) torch.Size([2048])
-            meta_vec = torch.matmul(vec1, proj_mat1) + \
-                   torch.matmul(vec2, proj_mat2)
-            loss = loss+cos_dis(meta_vec,dict3[key])
 
         for i in range(0, vocab_size // batch_sz):
             src1 = emb1[i * batch_sz:(i + 1) * batch_sz, :]
@@ -164,7 +154,7 @@ if __name__ == '__main__':
     src2_vec = np.matmul(src2_vec, mat2)
 
     meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
-    np.savez(f'pip_{ares_name}_sensem{step}_e{epoch}.npz', vectors=meta_emb, labels=keys
+    np.savez(f'piponly_{ares_name}_sensem{step}_e{epoch}.npz', vectors=meta_emb, labels=keys
              , mat1=mat1, mat2=mat2, loss=loss_list)
     end = time.time()
     print(f"it took {end - start}")
