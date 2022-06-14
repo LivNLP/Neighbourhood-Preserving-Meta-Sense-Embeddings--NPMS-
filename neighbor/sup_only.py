@@ -12,6 +12,7 @@ def get_args():
     parser.add_argument('-e', default=1, type=int)
     parser.add_argument('-norm', type=bool,default=True)
     parser.add_argument('-step', default=1)
+    parser.add_argument("-path", nargs="+", help="source embedding files")
     # parser.add_argument('-noun',default=False)
     args = parser.parse_args()
     return args
@@ -93,21 +94,29 @@ if __name__ == '__main__':
     optmizer = optim.Adam([proj_mat1, proj_mat2], lr=0.001)
     res = torch.zeros(1)
     res.to(device)
-    ares_name = ''
-    if args.norm:
-        ares = np.load('../emb_npz/ares.npz')
-        ares_name = 'n_ares'
-    else:
-        ares = np.load('../emb_npz/ares_org.npz')
-        ares_name = 'unares'
-    smbert = np.load('../sensembert/sensembert_norm.npz')
-    sources = [smbert, ares]
+    source_path = args.path
+    possible_emb = {'ares','lmms','sensem'}
+    for i in source_path:
+        assert i in possible_emb, 'please choose source embedding from ares,lmms,sensem'
+    path_dict = {
+        'ares':np.load('../emb_npz/ares.npz'),
+        'lmms':np.load('../emb_npz/lmms2048.npz'),
+        'sensem':np.load('../sensembert/sensembert_norm.npz')
+    }
+    emb_name_dict = {
+        'ares': 'n_ares',
+        'lmms': 'lmms',
+        'sensem': 'sensem'
+    }
+    emb1_name = emb_name_dict[source_path[0]]
+    emb2_name = emb_name_dict[source_path[1]]
+
+    sources = [path_dict[source_path[0]], path_dict[source_path[1]]]
     embs, sense_to_ix, ix_to_sense = load_source_embeddings(sources)
     emb1 = embs[0]
     emb2 = embs[1]
 
     batch_sz = 10000
-    step = args.step
     loss = 0
     naive_loss = 0
     epoch = args.e
@@ -150,7 +159,7 @@ if __name__ == '__main__':
     src2_vec = np.matmul(src2_vec, mat2)
 
     meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
-    np.savez(f'suponly_{ares_name}_sensem{step}_e{epoch}.npz', vectors=meta_emb, labels=keys
+    np.savez(f'suponly_{emb1_name}_{emb2_name}_e{epoch}.npz', vectors=meta_emb, labels=keys
              , mat1=mat1, mat2=mat2, loss=loss_list)
     end = time.time()
     print(f"it took {end - start}")
