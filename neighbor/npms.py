@@ -11,7 +11,9 @@ def get_args():
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-e', default=1, type=int)
     parser.add_argument('-norm', type=bool,default=True)
-    parser.add_argument('-step', default=1)
+    parser.add_argument('-size', default=10,type=int)
+    parser.add_argument('-alpha', default=0.9,type=float)
+    
     parser.add_argument("-path", nargs="+", help="source embedding files")
     # parser.add_argument('-noun',default=False)
     args = parser.parse_args()
@@ -72,6 +74,7 @@ def get_res(key_list, mat_list, emb_dim=2048):
 if __name__ == '__main__':
     #
     args = get_args()
+    print('alpha is',args.alpha)
 
     
     if torch.cuda.is_available():
@@ -114,22 +117,24 @@ if __name__ == '__main__':
         'lmms': 'lmms',
         'sensem': 'sensem'
     }
-    dir = '/LOCAL/robert/'
-    pip_arr = [ f'{dir}piponly_ares_lmms_e41.npz',f'{dir}piponly_ares_sensem_e40.npz',f'{dir}piponly_lmms_sensem_e30.npz']
-    sup_arr = [ f'{dir}suponly_ares_lmms_e30.npz',f'{dir}suponly_ares_sensem_e30.npz',f'{dir}suponly_lmms_sensem_e30.npz']
+    dir = '/LOCAL3/robert/'
+    pip_arr = [ f'{dir}piponly_ares_lmms_e10.npz',f'{dir}piponly_ares_sensem_e40.npz',f'{dir}piponly_lmms_sensem_e11.npz']
+    sup_arr = [ f'{dir}suponly_ares_lmms_e15.npz',f'{dir}suponly_ares_sensem_e15.npz',f'{dir}suponly_lmms_sensem_e15.npz']
 
     if 'ares' in source_path and 'lmms' in source_path:
-        i = 0
+        idx = 0
     elif 'ares' in source_path and 'sensem' in source_path:
-        i = 1
+        idx = 1
     else:
-        i = 2
+        idx = 2
 
-    size = min(args.e,30)
-    mean_pip = abs(np.mean(np.load(pip_arr[i])['loss']))
-    mean_sup = abs(np.mean(np.load(sup_arr[i])['loss']))
-    print('load',pip_arr[i],sup_arr[i])
-    print('mean pip:',mean_pip,'mean sup',mean_sup)
+    size = args.size
+    mean_pip = abs(sum(np.load(pip_arr[idx])['loss'][:size]) / size)
+    mean_sup = abs(sum(np.load(sup_arr[idx])['loss'][:size]) / size)
+    print('load', pip_arr[idx], sup_arr[idx])
+    print('pip', np.load(pip_arr[idx])['loss'][:size])
+    print('sup', np.load(sup_arr[idx])['loss'][:size])
+    print('mean pip:', mean_pip, 'mean sup', mean_sup)
 
     emb1_name = emb_name_dict[source_path[0]]
     emb2_name = emb_name_dict[source_path[1]]
@@ -146,7 +151,11 @@ if __name__ == '__main__':
     epoch = args.e
     loss_list = []
     vocab_size = len(sense_to_ix.keys())
-    for _ in range(epoch):
+
+
+
+    for ep in range(epoch):
+
         epoch_loss = 0
         sup_loss = 0
         for key in dict3.keys():
@@ -169,7 +178,7 @@ if __name__ == '__main__':
             pip_loss = pip_loss + torch.norm(meta_pip - torch.matmul(src1, src1.T)) \
                    + torch.norm(meta_pip - torch.matmul(src2, src2.T))
 
-        loss = pip_loss/mean_pip+sup_loss/mean_sup
+        loss = args.alpha*pip_loss/mean_pip+(1-args.alpha)*sup_loss/mean_sup
 
         epoch_loss =  loss.item()
         loss.backward()
@@ -180,20 +189,20 @@ if __name__ == '__main__':
         print(epoch_loss)
         loss_list.append(epoch_loss)
 
-    print(loss_list)
+        print(loss_list)
 
-    start = time.time()
-    mat1 = proj_mat1.cpu().detach().numpy()
-    mat2 = proj_mat2.cpu().detach().numpy()
+        start = time.time()
+        mat1 = proj_mat1.cpu().detach().numpy()
+        mat2 = proj_mat2.cpu().detach().numpy()
 
-    src1_vec = sources[0]['vectors']
-    src2_vec = sources[1]['vectors']
+        src1_vec = sources[0]['vectors']
+        src2_vec = sources[1]['vectors']
 
-    src1_vec = np.matmul(src1_vec, mat1)
-    src2_vec = np.matmul(src2_vec, mat2)
+        src1_vec = np.matmul(src1_vec, mat1)
+        src2_vec = np.matmul(src2_vec, mat2)
 
-    meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
-    np.savez(f'/LOCAL3/robert/sum_{emb1_name}_{emb2_name}_e{epoch}.npz', vectors=meta_emb, labels=keys
-             , mat1=mat1, mat2=mat2, loss=loss_list)
-    end = time.time()
-    print(f"it took {end - start}")
+        meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
+        np.savez(f'/LOCAL3/robert/sum{args.alpha}_{emb1_name}_{emb2_name}_e{ep+1}s{size}.npz', vectors=meta_emb, labels=keys
+                 , mat1=mat1, mat2=mat2, loss=loss_list)
+        end = time.time()
+        print(f"it took {end - start}")
