@@ -13,7 +13,7 @@ def get_args():
     parser.add_argument('-norm', type=bool,default=True)
     parser.add_argument('-size', default=10,type=int)
     parser.add_argument('-alpha', default=0.9,type=float)
-    
+    parser.add_argument('-hyper', default=False, type=bool)
     parser.add_argument("-path", nargs="+", help="source embedding files")
     # parser.add_argument('-noun',default=False)
     args = parser.parse_args()
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     #
     args = get_args()
     print('alpha is',args.alpha)
-
+    hyper = args.hyper
     
     if torch.cuda.is_available():
         print('device num', torch.cuda.device_count())
@@ -96,7 +96,19 @@ if __name__ == '__main__':
     vect3 = torch.tensor(sup_loader['vectors'], requires_grad=False, device=device)
     dict3 = {k: v for k, v in zip(sup_loader['labels'], vect3)}
 
-    optmizer = optim.Adam([proj_mat1, proj_mat2], lr=0.001)
+    if hyper:
+
+        alpha = torch.tensor(0.5, requires_grad=True, device=device)
+        print('train alpha as well!')
+        optmizer = optim.Adam([
+            {'params': proj_mat1},
+            {'params': proj_mat2},            
+            {'params': alpha, 'lr': 0.025}],
+            lr=0.001)
+        print(optmizer.param_groups)
+    else:
+        alpha = args.alpha
+        optmizer = optim.Adam([proj_mat1, proj_mat2], lr=0.001)
     res = torch.zeros(1)
     res.to(device)
     
@@ -178,7 +190,7 @@ if __name__ == '__main__':
             pip_loss = pip_loss + torch.norm(meta_pip - torch.matmul(src1, src1.T)) \
                    + torch.norm(meta_pip - torch.matmul(src2, src2.T))
 
-        loss = args.alpha*pip_loss/mean_pip+(1-args.alpha)*sup_loss/mean_sup
+        loss = alpha*pip_loss/mean_pip+(1-alpha)*sup_loss/mean_sup
 
         epoch_loss =  loss.item()
         loss.backward()
@@ -203,6 +215,6 @@ if __name__ == '__main__':
 
         meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
         np.savez(f'/LOCAL3/robert/sum{args.alpha}_{emb1_name}_{emb2_name}_e{ep+1}s{size}.npz', vectors=meta_emb, labels=keys
-                 , mat1=mat1, mat2=mat2, loss=loss_list)
+                 , mat1=mat1, mat2=mat2, loss=loss_list,alpha = float(alpha))
         end = time.time()
         print(f"it took {end - start}")
