@@ -169,7 +169,7 @@ if __name__ == '__main__':
     src3_vec = np.matmul(src3_vec, mat3)
 
     meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec,src3_vec])
-    np.savez(f'/LOCAL3/robert/piponly_{emb1_name}_{emb2_name}_{emb3_name}_e{epoch}.npz',  vectors=meta_emb, labels=keys
+    np.savez(f'piponly_{emb1_name}_{emb2_name}_{emb3_name}_e{epoch}.npz',  vectors=meta_emb, labels=keys
              , mat1=mat1, mat2=mat2,mat3=mat3, loss=loss_list)
     end = time.time()
     print(f"it took {end - start}")
