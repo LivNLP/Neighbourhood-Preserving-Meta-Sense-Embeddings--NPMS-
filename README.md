@@ -11,13 +11,6 @@ conda activate npms
 
 ## Word Sense Disambiguation(WSD)
 ### Obtain meta embedding
-#### Baseline method for AVG, CONC, SVD, aeme
-```
--i directory of source embeddings
--o output file path
--m the meta embedding method
--k the output dimension (for svd only)
-```
 - AVG
 ```
 python3 base_method.py -i emb1 emb2 -o outfile -m avg
@@ -42,7 +35,7 @@ Follow the instruction in the code and use the following command to generate AEM
 ```
 python run.py -m AAEME -i emb1 emb2 -d emb1_dim emb2_dim -o outfile --embed-dim 2048
 ```
-### NPMS
+- NPMS
 First go to the npms directory.
 ```
 cd npms
