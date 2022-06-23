@@ -50,6 +50,7 @@ To tune the value of alpha, we need to set the argument hyper to True
 python3  npms.py -e epoch_num -path emb1 emb2 -hyper True
 ```
 ### Evaluate meta embedding
+
 First switch to the eval_wsd directory
 ```
 cd eval_wsd
