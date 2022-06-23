@@ -43,6 +43,10 @@ Follow the instruction in the code and use the following command to generate AEM
 python run.py -m AAEME -i emb1 emb2 -d emb1_dim emb2_dim -o outfile --embed-dim 2048
 ```
 ### NPMS
+First go to the npms directory.
+```
+cd npms
+```
 The alpha can be a fixed hyper-parameter specified using following command
 ```
 python3  npms.py -e epoch_num -path emb1 emb2 -alpha a 
@@ -61,6 +65,7 @@ This paper tackle WiC by training a classifier and give prediction
 using this model.
 
 ```
+cd wic
 python3 train_classifier.py -sv_path emb_path -out_path model_path -tran projection_matrix_path
 python3 eval_classifier_wic.py -sv_path emb_path -clf_path model_path -tran projection_matrix_path
 ```
