@@ -325,7 +325,7 @@ class SensesVSM(object):
                     # print('sk',sk)
                     # print('sense_vec length',len(sense_vec))
                     sense_vec = sense_vec.to(device)
-                    if args.tran!="":
+                    if args.tran.endswith("npz"):
                         sense_vec = torch.mm(sense_vec.unsqueeze(0), trans).squeeze(0)
                     context_vec = context_vec.to(device)
                     sim = torch.dot(context_vec, sense_vec) / (context_vec.norm() * sense_vec.norm())
@@ -344,31 +344,22 @@ if __name__ == '__main__':
         args.device = 'cpu'
     device = torch.device(args.device)
     tran_pth = args.tran
-    if tran_pth!="":
+    if tran_pth.endswith("npz"):
         trans = np.load(tran_pth)['arr']
         print(trans.shape)
         trans = torch.tensor(trans).to(device)
         print(tran_pth)
-    # results_path = 'data/results/wic.compare.%s.txt' % args.eval_set
+
     word2id = dict()
     word2sense = dict()
 
     relu = nn.ReLU(inplace=True)
-    # ares_embeddings = load_ares_txt(args.ares_embedding_path)
-    # lmms = load_lmms(args.lmms_embedding_path)
+
     senses_vsm = SensesVSM(args.sv_path, normalize=True)
     tokenizer = BertTokenizer.from_pretrained('bert-large-cased')
     model = BertModel.from_pretrained('bert-large-cased', output_hidden_states=True)
     model.eval()
 
-    # W = load_weight(args.load_weight_path)
-    # W = torch.from_numpy(W).to(device)
-
-    # logging.info("Loading Glove Embeddings........")
-    # glove_embeddings = load_glove_embeddings(args.glove_embedding_path)
-    # logging.info("Done. Loaded words from GloVe embeddings")
-    #
-    # gloss_vecs = load_gloss_embeddings(args.gloss_embedding_path)
 
     logging.info('Processing sentences ...')
     instances, labels = [], []
@@ -382,19 +373,9 @@ if __name__ == '__main__':
         ex1_curr_vector = ex1_curr_vector.cpu()
         ex1_curr_lemma = wn_lemmatize(word, postag)
 
-        if args.tran=="":
-            if senses_vsm.ndims == 1024:
-                ex1_curr_vector = ex1_curr_vector
+        if not args.tran.endswith("npz"):
 
-            elif senses_vsm.ndims == 1024 + 1024:
-                ex1_curr_vector = np.hstack((ex1_curr_vector, ex1_curr_vector))
-
-            elif senses_vsm.ndims == 1024 + 1024 + 1024:
-                ex1_curr_vector = np.hstack((ex1_curr_vector, ex1_curr_vector, ex1_curr_vector))
-            elif senses_vsm.ndims == 1024 + 1024 + 2048:
-                ex1_curr_vector = np.hstack((ex1_curr_vector, ex1_curr_vector))
-                ex1_curr_vector = np.hstack((ex1_curr_vector, ex1_curr_vector))
-            else:
+            if senses_vsm.ndims != 1024:
                 ex1_curr_vector = np.hstack([ex1_curr_vector]*(senses_vsm.ndims//1024))
 
         ex1_curr_vector = ex1_curr_vector / np.linalg.norm(ex1_curr_vector)
@@ -412,21 +393,8 @@ if __name__ == '__main__':
         ex2_curr_word, ex2_curr_vector = bert_ex2[idx2]
         ex2_curr_lemma = wn_lemmatize(word, postag)
         ex2_curr_vector = ex2_curr_vector.cpu()
-        if args.tran=="":
-            if senses_vsm.ndims == 1024:
-                ex2_curr_vector = ex2_curr_vector
-
-            elif senses_vsm.ndims == 1024 + 1024:
-                ex2_curr_vector = np.hstack((ex2_curr_vector, ex2_curr_vector))
-
-            elif senses_vsm.ndims == 1024 + 1024 + 1024:
-                ex2_curr_vector = np.hstack((ex2_curr_vector, ex2_curr_vector, ex2_curr_vector))
-            elif senses_vsm.ndims == 1024 + 1024 + 2048:
-                ex2_curr_vector = np.hstack((ex2_curr_vector, ex2_curr_vector))
-                ex2_curr_vector = np.hstack((ex2_curr_vector, ex2_curr_vector))
-            else:
-                ex2_curr_vector = np.hstack([ex2_curr_vector]*(senses_vsm.ndims//1024))
-
+        if not args.tran.endswith("npz"):
+            ex2_curr_vector = np.hstack([ex2_curr_vector]*(senses_vsm.ndims//1024))
 
         ex2_curr_vector = ex2_curr_vector / np.linalg.norm(ex2_curr_vector)
         if (type(ex2_curr_vector) != torch.Tensor):
@@ -438,24 +406,11 @@ if __name__ == '__main__':
         ex2_synsets = [(wn_sensekey2synset(sk), score) for sk, score in ex2_matches]
         ex2_wsd_vector = senses_vsm.get_vec(ex2_matches[0][0])
 
-        """
-        stack_num = ex2_wsd_vector.shape[0] // ex2_curr_vector.shape[0]
-        # print("need to stack", stack_num)
-        # print("need to stack", stack_num)
-        if stack_num == 2:
-            ex2_curr_vector = torch.cat((ex2_curr_vector, ex2_curr_vector))
-            # print(ex2_curr_vector.shape)
-            ex1_curr_vector = torch.cat((ex1_curr_vector, ex1_curr_vector))
-        elif stack_num == 3:
-            ex2_curr_vector = torch.cat((ex2_curr_vector, ex2_curr_vector, ex2_curr_vector))
-            ex1_curr_vector = torch.cat((ex1_curr_vector, ex1_curr_vector, ex1_curr_vector))
-        elif stack_num == 4:
-            ex2_curr_vector = torch.cat((ex2_curr_vector, ex2_curr_vector, ex2_curr_vector, ex2_curr_vector))
-            ex1_curr_vector = torch.cat((ex1_curr_vector, ex1_curr_vector, ex1_curr_vector, ex1_curr_vector))
-        else:
-            ex2_curr_vector = torch.cat([ex2_curr_vector]*stack_num)
-            ex1_curr_vector = torch.cat([ex1_curr_vector]*stack_num)
-        """
+       
+        if args.tran.endswith("npz"):
+            proj = trans.cpu()
+            ex1_wsd_vector = np.matmul(ex1_wsd_vector, proj)
+            ex2_wsd_vector = np.matmul(ex2_wsd_vector, proj)
 
 
         s1_sim = np.dot(ex1_curr_vector, ex2_curr_vector)
@@ -467,11 +422,6 @@ if __name__ == '__main__':
         instances.append([s1_sim, s2_sim, s3_sim, s4_sim, s5_sim, s6_sim])
         labels.append(gold)
 
-    # print(wic_idx, gold)
-    # print(word, postag, idx1, idx2, ex1, ex2, gold)
-    # print(len(instances[-1]))
-    # print()
-
 
     logging.info('Training Logistic Regression ...')
     clf = LogisticRegression(random_state=42)
@@ -480,3 +430,4 @@ if __name__ == '__main__':
     logging.info('Saving model to %s' % args.out_path)
     with open(args.out_path,'wb') as clf_file:
         pickle.dump(clf, clf_file)
+
