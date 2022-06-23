@@ -36,6 +36,7 @@ Follow the instruction in the code and use the following command to generate AEM
 python run.py -m AAEME -i emb1 emb2 -d emb1_dim emb2_dim -o outfile --embed-dim 2048
 ```
 - NPMS
+
 First go to the npms directory.
 ```
 cd npms
