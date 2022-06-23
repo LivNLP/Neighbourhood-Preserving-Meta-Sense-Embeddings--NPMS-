@@ -61,7 +61,6 @@ python3 eval_proj.py -sv_path emb_path -test_set test_set_name -tran projection_
 For any other meta embedding methods
 ```
 python3 eval.py -sv_path emb_path -test_set test_set_name
-
 ```
 
 
