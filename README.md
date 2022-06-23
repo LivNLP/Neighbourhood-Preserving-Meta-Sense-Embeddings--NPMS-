@@ -50,9 +50,20 @@ To tune the value of alpha, we need to set the argument hyper to True
 python3  npms.py -e epoch_num -path emb1 emb2 -hyper True
 ```
 ### Evaluate meta embedding
+First switch to the eval_wsd directory
+```
+cd eval_wsd
+```
+For AEME and SVD, please run 
+```
+python3 eval_proj.py -sv_path emb_path -test_set test_set_name -tran projection_matrix_path
+```
+For any other meta embedding methods
 ```
 python3 eval.py -sv_path emb_path -test_set test_set_name
+
 ```
+
 
 ### Word in Context(WiC)
 This paper tackle WiC by training a classifier and give prediction
