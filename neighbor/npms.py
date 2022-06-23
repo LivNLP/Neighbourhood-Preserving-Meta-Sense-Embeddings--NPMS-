@@ -214,7 +214,7 @@ if __name__ == '__main__':
         src2_vec = np.matmul(src2_vec, mat2)
 
         meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
-        np.savez(f'/LOCAL3/robert/sum{args.alpha}_{emb1_name}_{emb2_name}_e{ep+1}s{size}.npz', vectors=meta_emb, labels=keys
+        np.savez(f'sum{args.alpha}_{emb1_name}_{emb2_name}_e{ep+1}s{size}.npz', vectors=meta_emb, labels=keys
                  , mat1=mat1, mat2=mat2, loss=loss_list,alpha = float(alpha))
         end = time.time()
         print(f"it took {end - start}")
