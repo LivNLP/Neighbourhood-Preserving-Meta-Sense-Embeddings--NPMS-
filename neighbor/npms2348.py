@@ -85,7 +85,7 @@ if __name__ == '__main__':
         print('current idx', idx)
         print(torch.cuda.get_device_name(idx))
     device = torch.device('cuda')
-    OUT_DIM = 2348
+    OUT_DIM = 2048
 
     proj_mat1 = torch.vstack((torch.eye(OUT_DIM), torch.zeros(2348 - OUT_DIM, OUT_DIM)))
     proj_mat1 = proj_mat1.to(device)
