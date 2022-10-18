@@ -227,13 +227,13 @@ if __name__ == '__main__':
 
         meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec],emb_dim=OUT_DIM)
         if hyper:
-            np.savez(f'/LOCAL3/robert/sum_tune_{emb1_name}_{emb2_name}_e{ep + 1}s{size}.npz',
+            np.savez(f'sum_tune_{emb1_name}_{emb2_name}_e{ep + 1}s{size}.npz',
                      vectors=meta_emb,
                      labels=keys
                      , mat1=mat1, mat2=mat2, alpha=float(alpha), loss=loss_list)
 
         else:
-            np.savez(f'/LOCAL3/robert/sum{alpha}_{emb1_name}_{emb2_name}_e{ep + 1}s{size}.npz',
+            np.savez(f'sum{alpha}_{emb1_name}_{emb2_name}_e{ep + 1}s{size}.npz',
                      vectors=meta_emb,
                      labels=keys
                      , mat1=mat1, mat2=mat2, loss=loss_list)
