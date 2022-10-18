@@ -57,7 +57,7 @@ def load_source_embeddings(sources: list):
     return embs, sense_to_ix, ix_to_sense
 
 
-def get_res(key_list, mat_list, emb_dim=2048):
+def get_res(key_list, mat_list, emb_dim=2348):
     vocab = set(key_list[0])
     for skset in key_list:
         vocab = vocab.union(skset)
@@ -69,6 +69,8 @@ def get_res(key_list, mat_list, emb_dim=2048):
     for i in range(len(key_list)):
         vecs = {k: v for k, v in zip(key_list[i], mat_list[i])}
         for sense in vecs:
+            print('vecs',len(vecs[sense]))
+            print('meta',meta_emb.shape)
             meta_emb[sense_to_ix[sense], :] += vecs[sense]
     return meta_emb, list(vocab)
 
@@ -85,13 +87,14 @@ if __name__ == '__main__':
         print('current idx', idx)
         print(torch.cuda.get_device_name(idx))
     device = torch.device('cuda')
-    OUT_DIM = 2048
+    OUT_DIM = 2348
+    INP_DIM = 2048
 
-    proj_mat1 = torch.vstack((torch.eye(OUT_DIM), torch.zeros(2348 - OUT_DIM, OUT_DIM)))
+    proj_mat1 = torch.eye(OUT_DIM)
     proj_mat1 = proj_mat1.to(device)
     proj_mat1.requires_grad = True
 
-    proj_mat2 = torch.eye(OUT_DIM)
+    proj_mat2 = torch.hstack((torch.zeros(INP_DIM,OUT_DIM-INP_DIM),torch.eye(INP_DIM)))
     proj_mat2 = proj_mat2.to(device)
     proj_mat2.requires_grad = True
 
@@ -187,7 +190,7 @@ if __name__ == '__main__':
             # print(vec1.shape) torch.Size([2048])
             meta_vec = torch.matmul(vec1, proj_mat1) + \
                        torch.matmul(vec2, proj_mat2)
-            sup_loss = sup_loss + cos_dis(meta_vec, dict3[key])
+            sup_loss = sup_loss + cos_dis(meta_vec[300:], dict3[key])
 
         pip_loss = 0
         for i in range(0, vocab_size // batch_sz):
@@ -222,7 +225,7 @@ if __name__ == '__main__':
         src1_vec = np.matmul(src1_vec, mat1)
         src2_vec = np.matmul(src2_vec, mat2)
 
-        meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec])
+        meta_emb, keys = get_res([i['labels'] for i in sources], [src1_vec, src2_vec],emb_dim=OUT_DIM)
         if hyper:
             np.savez(f'/LOCAL3/robert/sum_tune_{emb1_name}_{emb2_name}_e{ep + 1}s{size}.npz',
                      vectors=meta_emb,
