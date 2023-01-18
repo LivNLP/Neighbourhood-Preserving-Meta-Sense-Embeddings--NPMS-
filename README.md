@@ -1,4 +1,4 @@
-# Together We make Sense–Unsupervised Learning of Meta-Sense Embeddings
+# Together We make Sense–Learning of Meta-Sense Embeddings
 
 ## Preparation
 
