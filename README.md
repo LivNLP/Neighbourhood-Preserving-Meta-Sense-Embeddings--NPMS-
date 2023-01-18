@@ -43,11 +43,11 @@ cd npms
 ```
 The alpha can be a fixed hyper-parameter specified using following command
 ```
-python3  npms.py -e epoch_num -path emb1 emb2 -alpha a 
+python3  npms.py -i emb1 emb2 -o out_emb -alpha a 
 ```
 To tune the value of alpha, we need to set the argument hyper to True
 ```
-python3  npms.py -e epoch_num -path emb1 emb2 -hyper True
+python3  npms.py -i -path emb1 emb2 -o out_emb -hyper True
 ```
 ### Evaluate meta embedding
 
