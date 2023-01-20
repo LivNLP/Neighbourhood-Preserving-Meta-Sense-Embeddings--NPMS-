@@ -127,17 +127,12 @@ if __name__ == '__main__':
     path_dict = {k:np.load(f'../emb_npz/{k}.npz') for k in source_path}
 
 
-    dir = '/LOCAL/haochen/output/'
     if args.size!=None:
         size = args.size
     else:
         size = ""
-    mean_pip = 1 #abs(sum(np.load(pip_arr[idx])['loss'][:size]) / size)
-    mean_sup = 1 #abs(sum(np.load(sup_arr[idx])['loss'][:size]) / size)
-    # print('load', pip_arr[idx], sup_arr[idx])
-    # print('pip', np.load(pip_arr[idx])['loss'][:size])
-    # print('sup', np.load(sup_arr[idx])['loss'][:size])
-    # print('mean pip:', mean_pip, 'mean sup', mean_sup)
+    mean_pip = 1 
+    mean_sup = 1 
 
     emb1_name = source_path[0]
     emb2_name = source_path[1]
