@@ -138,7 +138,7 @@ if __name__ == '__main__':
         'lmms': 'lmms',
         'sensem': 'sensem'
     }
-    dir = '/LOCAL3/robert/'
+    dir = '~/'
     pip_arr = [f'{dir}piponly_ares_lmms_e10.npz', f'{dir}piponly_ares_sensem_e40.npz',
                f'{dir}piponly_lmms_sensem_e11.npz']
     sup_arr = [f'{dir}suponly_ares_lmms_e15.npz', f'{dir}suponly_ares_sensem_e15.npz',
