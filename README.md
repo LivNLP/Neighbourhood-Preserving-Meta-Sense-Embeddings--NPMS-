@@ -37,9 +37,9 @@ python run.py -m AAEME -i emb1 emb2 -d emb1_dim emb2_dim -o outfile --embed-dim 
 ```
 - NPMS
 
-First go to the npms directory.
+First go to the neighbor directory.
 ```
-cd npms
+cd neighbor
 ```
 The alpha can be a fixed hyper-parameter specified using following command
 ```
