@@ -7,8 +7,7 @@ import argparse
 
 
 def get_args():
-    parser = argparse.ArgumentParser(description='WSD Evaluation.',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    
     parser.add_argument('-e', default=1, type=int)
     parser.add_argument('-norm', type=bool, default=True)
     parser.add_argument('-size', default=None, type=int)
