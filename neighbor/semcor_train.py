@@ -278,7 +278,7 @@ def load_wsd_fw_set(wsd_fw_set_path):
     return eval_instances
 
 
-def filter():
+def create_sup_embedding():
     args = get_args()
 
 
@@ -336,4 +336,4 @@ def filter():
 
 
 
-filter()
+create_sup_embedding()
