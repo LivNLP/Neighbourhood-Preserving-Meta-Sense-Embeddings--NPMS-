@@ -1,5 +1,7 @@
 # Together We make Sense–Learning of Meta-Sense Embeddings
 
+This code in this repository is related to the ACL 2023 Findings [Paper](https://arxiv.org/abs/2305.19092)
+
 ## Preparation
 
 To reproduce our results, you may use the following command to create a conda environment.
